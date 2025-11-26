@@ -332,7 +332,11 @@ func (r *LLMISVCReconciler) expectedSchedulerDeployment(ctx context.Context, llm
 				continue
 			}
 
-			if slices.Contains(d.Spec.Template.Spec.Containers[i].Args, "--configText") ||
+			if slices.Contains(d.Spec.Template.Spec.Containers[i].Args, "--config-text") ||
+				slices.Contains(d.Spec.Template.Spec.Containers[i].Args, "-config-text") ||
+				slices.Contains(d.Spec.Template.Spec.Containers[i].Args, "--config-file") ||
+				slices.Contains(d.Spec.Template.Spec.Containers[i].Args, "-config-file") ||
+				slices.Contains(d.Spec.Template.Spec.Containers[i].Args, "--configText") ||
 				slices.Contains(d.Spec.Template.Spec.Containers[i].Args, "-configText") ||
 				slices.Contains(d.Spec.Template.Spec.Containers[i].Args, "--configFile") ||
 				slices.Contains(d.Spec.Template.Spec.Containers[i].Args, "-configFile") {
@@ -340,8 +344,16 @@ func (r *LLMISVCReconciler) expectedSchedulerDeployment(ctx context.Context, llm
 				break
 			}
 
+			// Detect flag format from existing container args
+			// If kebab-case flags detected, use --config-text (llm-d >= 0.3.0)
+			// Otherwise use --configText (llm-d < 0.3.0)
+			configFlag := "--configText" // default to legacy format
+			if usesKebabCaseFlags(d.Spec.Template.Spec.Containers[i].Args) {
+				configFlag = "--config-text"
+			}
+
 			d.Spec.Template.Spec.Containers[i].Args = append(d.Spec.Template.Spec.Containers[i].Args,
-				"--configText",
+				configFlag,
 				schedulerConfigText(llmSvc),
 			)
 		}
@@ -350,6 +362,28 @@ func (r *LLMISVCReconciler) expectedSchedulerDeployment(ctx context.Context, llm
 	log.FromContext(ctx).V(2).Info("Expected router scheduler deployment", "deployment", d)
 
 	return d
+}
+
+// usesKebabCaseFlags detects if the container args use kebab-case flag format (e.g., --some-flag)
+// by checking for flags that contain hyphens after the leading dashes.
+func usesKebabCaseFlags(args []string) bool {
+	for _, arg := range args {
+		// Check if it's a flag (starts with - or --)
+		if len(arg) > 2 && arg[0] == '-' {
+			// Skip the leading dashes
+			flagName := arg[1:]
+			if flagName[0] == '-' {
+				flagName = flagName[1:] // handle --flag
+			}
+			// If the flag name contains a hyphen, it's kebab-case
+			for j := 0; j < len(flagName); j++ {
+				if flagName[j] == '-' {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func schedulerConfigText(llmSvc *v1alpha1.LLMInferenceService) string {
