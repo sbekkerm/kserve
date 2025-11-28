@@ -531,8 +531,8 @@ ISTIO_VERSION=1.27.1
 KEDA_VERSION=2.16.1
 OPENTELEMETRY_OPERATOR_VERSION=0.113.0
 LWS_VERSION=v0.6.2
-GATEWAY_API_VERSION=v1.2.1
-GIE_VERSION=v0.3.0
+GATEWAY_API_VERSION=v1.3.1-0.20251106052652-079e4774d76b
+GIE_VERSION=v1.2.0-rc.1
 
 #================================================
 # Global Variables (from global-vars.env)
@@ -77921,17 +77921,17 @@ spec:
       template:
         containers:
         - args:
-          - --poolName
+          - --pool-name
           - '{{ ChildName .ObjectMeta.Name `-inference-pool` }}'
-          - --poolNamespace
+          - --pool-namespace
           - '{{ .ObjectMeta.Namespace }}'
           - --zap-encoder
           - json
-          - --grpcPort
+          - --grpc-port
           - "9002"
-          - --grpcHealthPort
+          - --grpc-health-port
           - "9003"
-          image: ghcr.io/llm-d/llm-d-inference-scheduler:v0.2.0
+          image: ghcr.io/llm-d/llm-d-inference-scheduler:v0.3.1
           imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 3

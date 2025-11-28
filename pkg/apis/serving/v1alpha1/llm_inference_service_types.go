@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	igwapi "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	igwapi "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -126,11 +126,6 @@ type LLMModelSpec struct {
 	// If omitted, it will default to `metadata.name`. For LoRA adapters, this field is required.
 	// +optional
 	Name *string `json:"name,omitempty"`
-
-	// Criticality defines how important it is to serve the model compared to other models.
-	// This is used by the Inference Gateway scheduler.
-	// +optional
-	Criticality *igwapi.Criticality `json:"criticality,omitempty"`
 
 	// LoRA (Low-Rank Adaptation) adapters configurations.
 	// Allows for specifying one or more LoRA adapters to be applied to the base model.

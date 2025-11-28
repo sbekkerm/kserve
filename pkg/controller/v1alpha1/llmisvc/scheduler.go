@@ -23,8 +23,6 @@ import (
 	"slices"
 	"sort"
 
-	"k8s.io/utils/ptr"
-
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -35,7 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"knative.dev/pkg/kmeta"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	igwapi "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	igwapi "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 
 	"github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
 	"github.com/kserve/kserve/pkg/utils"
@@ -49,9 +47,7 @@ func (r *LLMISVCReconciler) reconcileScheduler(ctx context.Context, llmSvc *v1al
 	if err := r.reconcileSchedulerServiceAccount(ctx, llmSvc); err != nil {
 		return err
 	}
-	if err := r.reconcileSchedulerInferenceModel(ctx, llmSvc); err != nil {
-		return err
-	}
+	// InferenceModel reconciliation removed - not supported in gateway-api-inference-extension v1.x
 	if err := r.reconcileSchedulerDeployment(ctx, llmSvc); err != nil {
 		return err
 	}
@@ -179,19 +175,6 @@ func (r *LLMISVCReconciler) reconcileSchedulerService(ctx context.Context, llmSv
 	return nil
 }
 
-func (r *LLMISVCReconciler) reconcileSchedulerInferenceModel(ctx context.Context, llmSvc *v1alpha1.LLMInferenceService) error {
-	expected := r.expectedSchedulerInferenceModel(ctx, llmSvc)
-	if utils.GetForceStopRuntime(llmSvc) || llmSvc.Spec.Router == nil || llmSvc.Spec.Router.Scheduler == nil || llmSvc.Spec.Router.Scheduler.Template == nil || llmSvc.Spec.Router.Scheduler.Pool.HasRef() {
-		return Delete(ctx, r, llmSvc, expected)
-	}
-
-	if err := Reconcile(ctx, r, llmSvc, &igwapi.InferenceModel{}, expected, semanticInferenceModelIsEqual); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (r *LLMISVCReconciler) expectedSchedulerService(ctx context.Context, llmSvc *v1alpha1.LLMInferenceService) *corev1.Service {
 	logger := log.FromContext(ctx)
 	svc := &corev1.Service{
@@ -271,37 +254,6 @@ func (r *LLMISVCReconciler) expectedSchedulerInferencePool(ctx context.Context, 
 	return ip
 }
 
-func (r *LLMISVCReconciler) expectedSchedulerInferenceModel(ctx context.Context, llmSvc *v1alpha1.LLMInferenceService) *igwapi.InferenceModel {
-	labels := SchedulerLabels(llmSvc)
-
-	im := &igwapi.InferenceModel{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      kmeta.ChildName(llmSvc.GetName(), "-inference-model"),
-			Namespace: llmSvc.GetNamespace(),
-			Labels:    labels,
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(llmSvc, v1alpha1.LLMInferenceServiceGVK),
-			},
-		},
-		Spec: igwapi.InferenceModelSpec{
-			ModelName: ptr.Deref(llmSvc.Spec.Model.Name, llmSvc.GetName()),
-			PoolRef: igwapi.PoolObjectReference{
-				Group: "inference.networking.x-k8s.io",
-				Kind:  "InferencePool",
-				Name:  igwapi.ObjectName(kmeta.ChildName(llmSvc.GetName(), "-inference-pool")),
-			},
-			Criticality: llmSvc.Spec.Model.Criticality,
-		},
-	}
-	if im.Spec.Criticality == nil {
-		im.Spec.Criticality = ptr.To(igwapi.Critical)
-	}
-
-	log.FromContext(ctx).V(2).Info("Expected InferenceModel", "inferencemodel", im)
-
-	return im
-}
-
 func (r *LLMISVCReconciler) expectedSchedulerDeployment(ctx context.Context, llmSvc *v1alpha1.LLMInferenceService) *appsv1.Deployment {
 	labels := SchedulerLabels(llmSvc)
 	d := &appsv1.Deployment{
@@ -376,7 +328,7 @@ func usesKebabCaseFlags(args []string) bool {
 				flagName = flagName[1:] // handle --flag
 			}
 			// If the flag name contains a hyphen, it's kebab-case
-			for j := 0; j < len(flagName); j++ {
+			for j := range len(flagName) {
 				if flagName[j] == '-' {
 					return true
 				}
@@ -527,12 +479,6 @@ func (r *LLMISVCReconciler) expectedSchedulerRoleBinding(llmSvc *v1alpha1.LLMInf
 }
 
 func semanticServiceIsEqual(expected *corev1.Service, current *corev1.Service) bool {
-	return equality.Semantic.DeepDerivative(expected.Spec, current.Spec) &&
-		equality.Semantic.DeepDerivative(expected.Labels, current.Labels) &&
-		equality.Semantic.DeepDerivative(expected.Annotations, current.Annotations)
-}
-
-func semanticInferenceModelIsEqual(expected *igwapi.InferenceModel, current *igwapi.InferenceModel) bool {
 	return equality.Semantic.DeepDerivative(expected.Spec, current.Spec) &&
 		equality.Semantic.DeepDerivative(expected.Labels, current.Labels) &&
 		equality.Semantic.DeepDerivative(expected.Annotations, current.Annotations)

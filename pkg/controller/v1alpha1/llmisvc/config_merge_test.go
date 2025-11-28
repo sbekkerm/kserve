@@ -33,7 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"knative.dev/pkg/apis"
-	igwapi "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
+	igwapi "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kserve/kserve/pkg/apis/serving/v1alpha1"
@@ -88,7 +88,7 @@ func TestMergeSpecs(t *testing.T) {
 						Scheduler: &v1alpha1.SchedulerSpec{
 							Pool: &v1alpha1.InferencePoolSpec{
 								Spec: &igwapi.InferencePoolSpec{
-									TargetPortNumber: 9999,
+									TargetPorts: []igwapi.Port{{Number: 9999}},
 								},
 							},
 						},
@@ -103,7 +103,7 @@ func TestMergeSpecs(t *testing.T) {
 					Scheduler: &v1alpha1.SchedulerSpec{
 						Pool: &v1alpha1.InferencePoolSpec{
 							Spec: &igwapi.InferencePoolSpec{
-								TargetPortNumber: 9999,
+								TargetPorts: []igwapi.Port{{Number: 9999}},
 							},
 						},
 					},
@@ -450,13 +450,10 @@ func TestMergeSpecs(t *testing.T) {
 						Scheduler: &v1alpha1.SchedulerSpec{
 							Pool: &v1alpha1.InferencePoolSpec{
 								Spec: &igwapi.InferencePoolSpec{
-									TargetPortNumber: 0,
-									EndpointPickerConfig: igwapi.EndpointPickerConfig{
-										ExtensionRef: &igwapi.Extension{
-											ExtensionConnection: igwapi.ExtensionConnection{
-												FailureMode: ptr.To(igwapi.FailClose),
-											},
-										},
+									TargetPorts: []igwapi.Port{{Number: 0}},
+									EndpointPickerRef: igwapi.EndpointPickerRef{
+										Name:        "test-epp",
+										FailureMode: igwapi.EndpointPickerFailClose,
 									},
 								},
 							},
@@ -499,13 +496,10 @@ func TestMergeSpecs(t *testing.T) {
 					Scheduler: &v1alpha1.SchedulerSpec{
 						Pool: &v1alpha1.InferencePoolSpec{
 							Spec: &igwapi.InferencePoolSpec{
-								TargetPortNumber: 0,
-								EndpointPickerConfig: igwapi.EndpointPickerConfig{
-									ExtensionRef: &igwapi.Extension{
-										ExtensionConnection: igwapi.ExtensionConnection{
-											FailureMode: ptr.To(igwapi.FailClose),
-										},
-									},
+								TargetPorts: []igwapi.Port{{Number: 0}},
+								EndpointPickerRef: igwapi.EndpointPickerRef{
+									Name:        "test-epp",
+									FailureMode: igwapi.EndpointPickerFailClose,
 								},
 							},
 						},
@@ -822,28 +816,6 @@ func TestMergeSpecs(t *testing.T) {
 			},
 		},
 		{
-			name: "merge model criticality",
-			cfgs: []v1alpha1.LLMInferenceServiceSpec{
-				{
-					Model: v1alpha1.LLMModelSpec{
-						URI:         apis.URL{Path: "model-uri"},
-						Criticality: ptr.To(igwapi.Sheddable),
-					},
-				},
-				{
-					Model: v1alpha1.LLMModelSpec{
-						Criticality: ptr.To(igwapi.Critical),
-					},
-				},
-			},
-			want: v1alpha1.LLMInferenceServiceSpec{
-				Model: v1alpha1.LLMModelSpec{
-					URI:         apis.URL{Path: "model-uri"},
-					Criticality: ptr.To(igwapi.Critical),
-				},
-			},
-		},
-		{
 			name: "merge model URI",
 			cfgs: []v1alpha1.LLMInferenceServiceSpec{
 				{
@@ -952,9 +924,8 @@ func TestMergeSpecs(t *testing.T) {
 			cfgs: []v1alpha1.LLMInferenceServiceSpec{
 				{
 					Model: v1alpha1.LLMModelSpec{
-						URI:         apis.URL{Path: "base-model"},
-						Name:        ptr.To("base-name"),
-						Criticality: ptr.To(igwapi.Sheddable),
+						URI:  apis.URL{Path: "base-model"},
+						Name: ptr.To("base-name"),
 						LoRA: &v1alpha1.LoRASpec{
 							Adapters: []v1alpha1.LLMModelSpec{
 								{URI: apis.URL{Path: "lora-model"}},
@@ -975,8 +946,7 @@ func TestMergeSpecs(t *testing.T) {
 				},
 				{
 					Model: v1alpha1.LLMModelSpec{
-						Name:        ptr.To("override-name"),
-						Criticality: ptr.To(igwapi.Critical),
+						Name: ptr.To("override-name"),
 						LoRA: &v1alpha1.LoRASpec{
 							Adapters: []v1alpha1.LLMModelSpec{
 								{URI: apis.URL{Path: "lora-model2"}},
@@ -1000,9 +970,8 @@ func TestMergeSpecs(t *testing.T) {
 			},
 			want: v1alpha1.LLMInferenceServiceSpec{
 				Model: v1alpha1.LLMModelSpec{
-					URI:         apis.URL{Path: "base-model"}, // Base URI preserved
-					Name:        ptr.To("override-name"),      // Override name
-					Criticality: ptr.To(igwapi.Critical),
+					URI:  apis.URL{Path: "base-model"}, // Base URI preserved
+					Name: ptr.To("override-name"),      // Override name
 					LoRA: &v1alpha1.LoRASpec{
 						Adapters: []v1alpha1.LLMModelSpec{
 							{URI: apis.URL{Path: "lora-model2"}},
