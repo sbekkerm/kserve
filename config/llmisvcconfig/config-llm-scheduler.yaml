@@ -7,13 +7,18 @@ spec:
     scheduler:
       pool:
         spec:
-          extensionRef:
+          endpointPickerRef:
             failureMode: FailOpen
             kind: Service
             name: |-
               {{ ChildName .ObjectMeta.Name `-epp-service` }}
-          selector: { }
-          targetPortNumber: 8000
+            port:
+              number: 9002
+          selector:
+            matchLabels:
+              app: kserve-inference
+          targetPorts:
+            - number: 8000
       template:
         containers:
           - name: main
