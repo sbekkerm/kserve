@@ -14,15 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha2
+package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	igwapi "sigs.k8s.io/gateway-api-inference-extension/api/v1"
 	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
+)
+
+// Criticality defines how important it is to serve the model compared to other models.
+// +kubebuilder:validation:Enum=Critical;Standard;Sheddable
+type Criticality string
+
+const (
+	// Critical - Requests to this model should be shed last.
+	Critical Criticality = "Critical"
+	// Standard - Requests to this model will be queued or shed before critical traffic.
+	Standard Criticality = "Standard"
+	// Sheddable - Requests to this model should be shed before critical and standard traffic.
+	Sheddable Criticality = "Sheddable"
 )
 
 // LLMInferenceService is the Schema for the llminferenceservices API, representing a single LLM deployment.
@@ -38,7 +50,6 @@ import (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:printcolumn:name="URLs",type="string",JSONPath=".status.addresses[*].url",priority=1
 // +kubebuilder:resource:path=llminferenceservices,shortName=llmisvc
-// +kubebuilder:storageversion
 type LLMInferenceService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -51,7 +62,6 @@ type LLMInferenceService struct {
 // It acts as a template to provide base configurations that can be inherited by multiple LLMInferenceService instances.
 // +k8s:openapi-gen=true
 // +kubebuilder:object:root=true
-// +kubebuilder:storageversion
 type LLMInferenceServiceConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -128,6 +138,12 @@ type LLMModelSpec struct {
 	// If omitted, it will default to `metadata.name`. For LoRA adapters, this field is required.
 	// +optional
 	Name *string `json:"name,omitempty"`
+
+	// Criticality defines how important it is to serve the model compared to other models.
+	// This is used by the Inference Gateway scheduler.
+	// Deprecated: This field is deprecated in v1alpha1 and removed in v1alpha2.
+	// +optional
+	Criticality *Criticality `json:"criticality,omitempty"`
 
 	// LoRA (Low-Rank Adaptation) adapters configurations.
 	// Allows for specifying one or more LoRA adapters to be applied to the base model.
@@ -232,10 +248,6 @@ type SchedulerSpec struct {
 // InferencePoolSpec defines the configuration for an InferencePool.
 // 'Spec' and 'Ref' are mutually exclusive.
 type InferencePoolSpec struct {
-	// Spec defines an inline InferencePool specification.
-	// +optional
-	Spec *igwapi.InferencePoolSpec `json:"spec,omitempty"`
-
 	// Ref is a reference to an existing InferencePool.
 	// +optional
 	Ref *corev1.LocalObjectReference `json:"ref,omitempty"`
