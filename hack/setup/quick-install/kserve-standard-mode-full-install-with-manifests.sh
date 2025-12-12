@@ -120143,7 +120143,9 @@ spec:
               number: 9002
           selector:
             matchLabels:
-              app: '{{ ChildName .ObjectMeta.Name `-predictor` }}'
+              app.kubernetes.io/name: '{{ .ObjectMeta.Name }}'
+              app.kubernetes.io/part-of: llminferenceservice
+              kserve.io/component: workload
           targetPorts:
           - number: 8000
       template:
