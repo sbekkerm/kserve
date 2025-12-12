@@ -1376,10 +1376,6 @@ spec:
               model:
                 properties:
                   criticality:
-                    enum:
-                    - Critical
-                    - Standard
-                    - Sheddable
                     type: string
                   lora:
                     properties:
@@ -10570,6 +10566,56 @@ spec:
                                 type: string
                             type: object
                             x-kubernetes-map-type: atomic
+                          spec:
+                            properties:
+                              extensionRef:
+                                properties:
+                                  failureMode:
+                                    default: FailClose
+                                    enum:
+                                    - FailOpen
+                                    - FailClose
+                                    type: string
+                                  group:
+                                    default: ""
+                                    maxLength: 253
+                                    pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                    type: string
+                                  kind:
+                                    default: Service
+                                    maxLength: 63
+                                    minLength: 1
+                                    pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                                    type: string
+                                  name:
+                                    maxLength: 253
+                                    minLength: 1
+                                    type: string
+                                  portNumber:
+                                    format: int32
+                                    maximum: 65535
+                                    minimum: 1
+                                    type: integer
+                                required:
+                                - name
+                                type: object
+                              selector:
+                                additionalProperties:
+                                  maxLength: 63
+                                  minLength: 0
+                                  pattern: ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$
+                                  type: string
+                                type: object
+                              targetPortNumber:
+                                format: int32
+                                maximum: 65535
+                                minimum: 1
+                                type: integer
+                            required:
+                            - extensionRef
+                            - selector
+                            - targetPortNumber
+                            type: object
                         type: object
                       template:
                         properties:
@@ -42461,10 +42507,6 @@ spec:
               model:
                 properties:
                   criticality:
-                    enum:
-                    - Critical
-                    - Standard
-                    - Sheddable
                     type: string
                   lora:
                     properties:
@@ -51655,6 +51697,56 @@ spec:
                                 type: string
                             type: object
                             x-kubernetes-map-type: atomic
+                          spec:
+                            properties:
+                              extensionRef:
+                                properties:
+                                  failureMode:
+                                    default: FailClose
+                                    enum:
+                                    - FailOpen
+                                    - FailClose
+                                    type: string
+                                  group:
+                                    default: ""
+                                    maxLength: 253
+                                    pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                    type: string
+                                  kind:
+                                    default: Service
+                                    maxLength: 63
+                                    minLength: 1
+                                    pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                                    type: string
+                                  name:
+                                    maxLength: 253
+                                    minLength: 1
+                                    type: string
+                                  portNumber:
+                                    format: int32
+                                    maximum: 65535
+                                    minimum: 1
+                                    type: integer
+                                required:
+                                - name
+                                type: object
+                              selector:
+                                additionalProperties:
+                                  maxLength: 63
+                                  minLength: 0
+                                  pattern: ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$
+                                  type: string
+                                type: object
+                              targetPortNumber:
+                                format: int32
+                                maximum: 65535
+                                minimum: 1
+                                type: integer
+                            required:
+                            - extensionRef
+                            - selector
+                            - targetPortNumber
+                            type: object
                         type: object
                       template:
                         properties:
@@ -85587,7 +85679,7 @@ spec:
         value: INFO
       - name: HF_HUB_CACHE
         value: /models
-      image: ghcr.io/llm-d/llm-d-dev:v0.2.2
+      image: ghcr.io/llm-d/llm-d-cuda:v0.4.0
       imagePullPolicy: IfNotPresent
       livenessProbe:
         failureThreshold: 3
