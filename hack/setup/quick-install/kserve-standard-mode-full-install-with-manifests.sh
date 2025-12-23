@@ -1001,7 +1001,7 @@ install_gateway_api_extension_crd() {
 
     wait_for_crds "60s" \
         "inferencepools.inference.networking.x-k8s.io" \
-        "inferencemodels.inference.networking.x-k8s.io"
+        "inferenceobjectives.inference.networking.x-k8s.io"
 
     log_success "Gateway Inference Extension CRDs are ready!"
 }
@@ -29958,6 +29958,10 @@ spec:
               model:
                 properties:
                   criticality:
+                    enum:
+                    - Critical
+                    - Standard
+                    - Sheddable
                     type: string
                   lora:
                     properties:
@@ -71089,6 +71093,10 @@ spec:
               model:
                 properties:
                   criticality:
+                    enum:
+                    - Critical
+                    - Standard
+                    - Sheddable
                     type: string
                   lora:
                     properties:
@@ -120761,13 +120769,33 @@ webhooks:
       namespace: kserve
       path: /validate-serving-kserve-io-v1alpha2-llminferenceservice
   failurePolicy: Fail
-  name: llminferenceservice.kserve-webhook-server.validator
+  name: llminferenceservice.kserve-webhook-server.v1alpha2.validator
+  rules:
+  - apiGroups:
+    - serving.kserve.io
+    apiVersions:
+    - v1alpha2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - llminferenceservices
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: llmisvc-webhook-server-service
+      namespace: kserve
+      path: /validate-serving-kserve-io-v1alpha1-llminferenceservice
+  failurePolicy: Fail
+  name: llminferenceservice.kserve-webhook-server.v1alpha1.validator
   rules:
   - apiGroups:
     - serving.kserve.io
     apiVersions:
     - v1alpha1
-    - v1alpha2
     operations:
     - CREATE
     - UPDATE
@@ -120792,13 +120820,34 @@ webhooks:
       namespace: kserve
       path: /validate-serving-kserve-io-v1alpha2-llminferenceserviceconfig
   failurePolicy: Fail
-  name: llminferenceserviceconfig.kserve-webhook-server.validator
+  name: llminferenceserviceconfig.kserve-webhook-server.v1alpha2.validator
+  rules:
+  - apiGroups:
+    - serving.kserve.io
+    apiVersions:
+    - v1alpha2
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - llminferenceserviceconfigs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: llmisvc-webhook-server-service
+      namespace: kserve
+      path: /validate-serving-kserve-io-v1alpha1-llminferenceserviceconfig
+  failurePolicy: Fail
+  name: llminferenceserviceconfig.kserve-webhook-server.v1alpha1.validator
   rules:
   - apiGroups:
     - serving.kserve.io
     apiVersions:
     - v1alpha1
-    - v1alpha2
     operations:
     - CREATE
     - UPDATE
