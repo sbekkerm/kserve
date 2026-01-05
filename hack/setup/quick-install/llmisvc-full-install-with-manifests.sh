@@ -86064,6 +86064,7 @@ webhooks:
       namespace: kserve
       path: /validate-serving-kserve-io-v1alpha2-llminferenceservice
   failurePolicy: Fail
+  matchPolicy: Exact
   name: llminferenceservice.kserve-webhook-server.v1alpha2.validator
   rules:
   - apiGroups:
@@ -86085,6 +86086,7 @@ webhooks:
       namespace: kserve
       path: /validate-serving-kserve-io-v1alpha1-llminferenceservice
   failurePolicy: Fail
+  matchPolicy: Exact
   name: llminferenceservice.kserve-webhook-server.v1alpha1.validator
   rules:
   - apiGroups:
@@ -86115,6 +86117,7 @@ webhooks:
       namespace: kserve
       path: /validate-serving-kserve-io-v1alpha2-llminferenceserviceconfig
   failurePolicy: Fail
+  matchPolicy: Exact
   name: llminferenceserviceconfig.kserve-webhook-server.v1alpha2.validator
   rules:
   - apiGroups:
@@ -86137,6 +86140,7 @@ webhooks:
       namespace: kserve
       path: /validate-serving-kserve-io-v1alpha1-llminferenceserviceconfig
   failurePolicy: Fail
+  matchPolicy: Exact
   name: llminferenceserviceconfig.kserve-webhook-server.v1alpha1.validator
   rules:
   - apiGroups:
