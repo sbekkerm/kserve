@@ -1,6 +1,7 @@
 name: LLMInferenceService E2E Tests
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - "pkg/apis/serving/v1alpha1/llm*"
