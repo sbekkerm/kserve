@@ -24,6 +24,7 @@ from kserve.protocol.rest.openai.types import (
     Completion,
     CompletionRequest,
     ChatCompletionRequest,
+    CreateSpeechRequest,
     EmbeddingRequest,
     Embedding,
     ErrorResponse,
@@ -104,6 +105,34 @@ class OpenAIEncoderModel(OpenAIModel):
         raw_request: Optional[Request] = None,
         context: Optional[Dict[str, Any]] = None,
     ) -> Union[AsyncGenerator[str, None], Rerank, ErrorResponse]:
+        pass
+
+
+class OpenAISpeechModel(OpenAIModel):
+    """
+    An abstract model with methods for implementing Text-to-Speech (v1/audio/speech) endpoint.
+
+    Users should extend this model and implement the abstract methods in order to expose
+    this endpoint.
+    """
+
+    @abstractmethod
+    async def create_speech(
+        self,
+        request: CreateSpeechRequest,
+        raw_request: Optional[Request] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Union[AsyncGenerator[bytes, None], bytes, ErrorResponse]:
+        """Generate audio from the input text.
+
+        Args:
+            request: The speech creation request containing input text and voice settings.
+            raw_request: The raw FastAPI request object.
+            context: Optional context dictionary with headers and response.
+
+        Returns:
+            Audio bytes, an async generator of audio bytes for streaming, or an error response.
+        """
         pass
 
 

@@ -26,6 +26,7 @@ from vllm.entrypoints.utils import with_cancellation
 from kserve.protocol.rest.openai.types import (
     ChatCompletionRequest,
     CompletionRequest,
+    CreateSpeechRequest,
     EmbeddingRequest,
     ErrorResponse,
     Model,
@@ -45,6 +46,7 @@ if len(OPENAI_ROUTE_PREFIX) > 0 and not OPENAI_ROUTE_PREFIX.startswith("/"):
 
 CreateCompletionRequestAdapter = TypeAdapter(CompletionRequest)
 ChatCompletionRequestAdapter = TypeAdapter(ChatCompletionRequest)
+CreateSpeechRequestAdapter = TypeAdapter(CreateSpeechRequest)
 EmbeddingRequestAdapter = TypeAdapter(EmbeddingRequest)
 RerankRequestAdapter = TypeAdapter(RerankRequest)
 
@@ -226,6 +228,60 @@ class OpenAIEndpoints:
         else:
             return rerank
 
+    async def create_speech(
+        self,
+        request_body: CreateSpeechRequest,
+        raw_request: Request,
+        response: Response,
+    ) -> Response:
+        """Create speech handler.
+
+        Args:
+            request_body (CreateSpeechRequest): Speech creation params body.
+            raw_request (Request): fastapi request object.
+            response (Response): fastapi response object.
+
+        Returns:
+            Response: Audio response (binary audio data).
+        """
+        try:
+            params = CreateSpeechRequestAdapter.validate_python(request_body)
+        except ValidationError as e:
+            raise RequestValidationError(errors=e.errors())
+        params = request_body
+        model_name = params.model
+        model_ready = await self.dataplane.model_ready(model_name)
+
+        if not model_ready:
+            raise ModelNotReady(model_name)
+
+        # Determine the content type based on response format
+        format_to_content_type = {
+            "mp3": "audio/mpeg",
+            "opus": "audio/opus",
+            "aac": "audio/aac",
+            "flac": "audio/flac",
+            "wav": "audio/wav",
+            "pcm": "audio/pcm",
+        }
+        content_type = format_to_content_type.get(params.response_format, "audio/mpeg")
+
+        speech = await self.dataplane.create_speech(
+            model_name=model_name,
+            request=params,
+            raw_request=raw_request,
+            headers=raw_request.headers,
+            response=response,
+        )
+        if isinstance(speech, ErrorResponse):
+            return ORJSONResponse(
+                content=speech.model_dump(), status_code=int(speech.error.code)
+            )
+        elif isinstance(speech, AsyncGenerator):
+            return StreamingResponse(speech, media_type=content_type)
+        else:
+            return Response(content=speech, media_type=content_type)
+
     async def models(
         self,
     ) -> ModelList:
@@ -284,6 +340,13 @@ def register_openai_endpoints(app: FastAPI, dataplane: OpenAIDataPlane):
     openai_router.add_api_route(
         r"/v1/rerank",
         endpoints.create_rerank,
+        methods=["POST"],
+        response_model_exclude_none=True,
+        response_model_exclude_unset=True,
+    )
+    openai_router.add_api_route(
+        r"/v1/audio/speech",
+        endpoints.create_speech,
         methods=["POST"],
         response_model_exclude_none=True,
         response_model_exclude_unset=True,

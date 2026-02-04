@@ -24,6 +24,7 @@ from kserve.protocol.rest.openai.types import (
     ChatCompletionRequest,
     Completion,
     CompletionRequest,
+    CreateSpeechRequest,
     Embedding,
     EmbeddingRequest,
     ErrorResponse,
@@ -35,6 +36,7 @@ from .openai_model import (
     OpenAIModel,
     OpenAIGenerativeModel,
     OpenAIEncoderModel,
+    OpenAISpeechModel,
 )
 
 
@@ -161,6 +163,38 @@ class OpenAIDataPlane(DataPlane):
 
         context = {"headers": dict(headers), "response": response}
         return await model.create_rerank(
+            request=request, raw_request=raw_request, context=context
+        )
+
+    async def create_speech(
+        self,
+        model_name: str,
+        request: CreateSpeechRequest,
+        raw_request: Request,
+        headers: Headers,
+        response: Response,
+    ) -> Union[AsyncGenerator[bytes, None], bytes, ErrorResponse]:
+        """Generate audio from the input text.
+
+        Args:
+            model_name (str): Model name.
+            request (CreateSpeechRequest): Params to create speech audio.
+            raw_request (Request): fastapi request object.
+            headers: (Headers): Request headers.
+            response: (Response): FastAPI response object
+
+        Returns:
+            response: Audio bytes, a streaming audio response, or an error response.
+        """
+        model = await self.get_model(model_name)
+        if not isinstance(model, OpenAISpeechModel):
+            return create_error_response(
+                message=f"Model {model_name} does not support Text-to-Speech API",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+
+        context = {"headers": dict(headers), "response": response}
+        return await model.create_speech(
             request=request, raw_request=raw_request, context=context
         )
 

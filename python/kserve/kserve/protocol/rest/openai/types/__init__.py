@@ -46,6 +46,8 @@ from vllm.entrypoints.chat_utils import (
 from typing import Optional
 from pydantic import BaseModel, Field
 
+from .openapi import CreateSpeechRequest
+
 
 class Error(BaseModel):
     code: Optional[str] = Field(...)
@@ -74,6 +76,7 @@ __all__ = [
     "ChatCompletionRequest",
     "CompletionRequest",
     "ChatCompletionContentPartParam",
+    "CreateSpeechRequest",
     "CustomChatCompletionMessageParam",
     "ChatCompletionMessageParam",
     "ChatCompletionToolMessageParam",

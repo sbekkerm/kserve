@@ -20,16 +20,19 @@ from .openai_model import (
     OpenAIModel,
     OpenAIGenerativeModel,
     OpenAIEncoderModel,
+    OpenAISpeechModel,
 )
 
 from .openai_proxy_model import OpenAIProxyModel
 from .openai_chat_adapter_model import OpenAIChatAdapterModel
-from .types import ChatCompletionMessageParam
+from .types import ChatCompletionMessageParam, CreateSpeechRequest
 
 __all__ = [
+    "CreateSpeechRequest",
     "OpenAIEncoderModel",
     "OpenAIGenerativeModel",
     "OpenAIModel",
+    "OpenAISpeechModel",
     "OpenAIChatAdapterModel",
     "OpenAIProxyModel",
     "ChatPrompt",
