@@ -2692,7 +2692,7 @@ func TestValidateConfidential(t *testing.T) {
 				},
 			},
 			expectedErr:      gomega.BeNil(),
-			expectedWarnings: gomega.BeEmpty(),
+			expectedWarnings: gomega.ContainElement(gomega.ContainSubstring("confidential.tls")),
 		},
 		"confidential enabled with storageUri no resourceId": {
 			isvc: InferenceService{
@@ -2711,7 +2711,7 @@ func TestValidateConfidential(t *testing.T) {
 				},
 			},
 			expectedErr:      gomega.BeNil(),
-			expectedWarnings: gomega.BeEmpty(),
+			expectedWarnings: gomega.ContainElement(gomega.ContainSubstring("confidential.tls")),
 		},
 		"confidential enabled without storageUri": {
 			isvc: InferenceService{
@@ -2787,6 +2787,30 @@ func TestValidateConfidential(t *testing.T) {
 				},
 			},
 			expectedErr:      gomega.MatchError(gomega.ContainSubstring("must be in the format kbs:///<repo>/<type>/<tag>")),
+			expectedWarnings: gomega.ContainElement(gomega.ContainSubstring("confidential.tls")),
+		},
+		"confidential enabled with tls does not warn about missing tls": {
+			isvc: InferenceService{
+				ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"},
+				Spec: InferenceServiceSpec{
+					Predictor: PredictorSpec{
+						Model: &ModelSpec{
+							PredictorExtensionSpec: PredictorExtensionSpec{
+								StorageURI: proto.String("s3://bucket/model"),
+								Confidential: &ConfidentialSpec{
+									Enabled:    true,
+									ResourceId: &validResourceId,
+									TLS: &ConfidentialTLSSpec{
+										CertResourceId: proto.String("kbs:///default/cert/tls-crt"),
+										KeyResourceId:  proto.String("kbs:///default/cert/tls-key"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr:      gomega.BeNil(),
 			expectedWarnings: gomega.BeEmpty(),
 		},
 	}

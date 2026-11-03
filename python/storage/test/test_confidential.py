@@ -25,6 +25,7 @@ from kserve_storage.confidential import (
     JWEDecryptor,
     SecretResolutionError,
     SecretResolver,
+    fetch_tls_certs,
 )
 
 # --- Helpers ---
@@ -519,3 +520,63 @@ class TestJWEDecryptorDirectory:
         assert len(decrypted) == 1
         assert (tmp_path / "model.bin").read_bytes() == b"real model"
         assert list(tmp_path.rglob(".jwe-decrypt.*.tmp")) == []
+
+
+class MapSecretResolver(SecretResolver):
+    """A test resolver that returns a value per resource ID."""
+
+    def __init__(self, values: dict[str, bytes]):
+        self._values = values
+        self.requested: list[str] = []
+
+    def resolve_key(self, resource_id: str) -> bytes:
+        self.requested.append(resource_id)
+        try:
+            return self._values[resource_id]
+        except KeyError as e:
+            raise SecretResolutionError(f"unknown resource {resource_id}") from e
+
+
+class TestFetchTLSCerts:
+    def test_writes_pem_files(self, tmp_path):
+        resolver = MapSecretResolver(
+            {
+                "kbs:///default/cert/tls-crt": b"CERTPEM",
+                "kbs:///default/cert/tls-key": b"KEYPEM",
+                "kbs:///default/cert/ca-crt": b"CAPEM",
+            }
+        )
+        dest = tmp_path / "tls"
+        written = fetch_tls_certs(
+            resolver,
+            cert_resource_id="kbs:///default/cert/tls-crt",
+            key_resource_id="kbs:///default/cert/tls-key",
+            ca_resource_id="kbs:///default/cert/ca-crt",
+            dest_dir=str(dest),
+        )
+
+        assert dest.joinpath("tls.crt").read_bytes() == b"CERTPEM"
+        assert dest.joinpath("tls.key").read_bytes() == b"KEYPEM"
+        assert dest.joinpath("ca.crt").read_bytes() == b"CAPEM"
+        assert {p.name for p in written} == {"tls.crt", "tls.key", "ca.crt"}
+        assert dest.joinpath("tls.key").stat().st_mode & 0o777 == 0o600
+
+    def test_optional_ca(self, tmp_path):
+        resolver = MapSecretResolver(
+            {
+                "kbs:///default/cert/tls-crt": b"CERTPEM",
+                "kbs:///default/cert/tls-key": b"KEYPEM",
+            }
+        )
+        dest = tmp_path / "tls"
+        fetch_tls_certs(
+            resolver,
+            cert_resource_id="kbs:///default/cert/tls-crt",
+            key_resource_id="kbs:///default/cert/tls-key",
+            dest_dir=str(dest),
+        )
+        assert not dest.joinpath("ca.crt").exists()
+
+    def test_missing_ids_raise(self, tmp_path):
+        with pytest.raises(ValueError, match="must both be set"):
+            fetch_tls_certs(StubSecretResolver(b"x"), "", "kbs:///default/cert/tls-key")

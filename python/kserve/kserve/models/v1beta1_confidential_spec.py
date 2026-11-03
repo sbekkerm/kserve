@@ -48,15 +48,17 @@ class V1beta1ConfidentialSpec(object):
     """
     openapi_types = {
         'enabled': 'bool',
-        'resource_id': 'str'
+        'resource_id': 'str',
+        'tls': 'V1beta1ConfidentialTLSSpec'
     }
 
     attribute_map = {
         'enabled': 'enabled',
-        'resource_id': 'resourceId'
+        'resource_id': 'resourceId',
+        'tls': 'tls'
     }
 
-    def __init__(self, enabled=False, resource_id=None, local_vars_configuration=None):  # noqa: E501
+    def __init__(self, enabled=False, resource_id=None, tls=None, local_vars_configuration=None):  # noqa: E501
         """V1beta1ConfidentialSpec - a model defined in OpenAPI"""  # noqa: E501
         if local_vars_configuration is None:
             local_vars_configuration = Configuration()
@@ -64,11 +66,14 @@ class V1beta1ConfidentialSpec(object):
 
         self._enabled = None
         self._resource_id = None
+        self._tls = None
         self.discriminator = None
 
         self.enabled = enabled
         if resource_id is not None:
             self.resource_id = resource_id
+        if tls is not None:
+            self.tls = tls
 
     @property
     def enabled(self):
@@ -117,6 +122,27 @@ class V1beta1ConfidentialSpec(object):
         """
 
         self._resource_id = resource_id
+
+    @property
+    def tls(self):
+        """Gets the tls of this V1beta1ConfidentialSpec.  # noqa: E501
+
+
+        :return: The tls of this V1beta1ConfidentialSpec.  # noqa: E501
+        :rtype: V1beta1ConfidentialTLSSpec
+        """
+        return self._tls
+
+    @tls.setter
+    def tls(self, tls):
+        """Sets the tls of this V1beta1ConfidentialSpec.
+
+
+        :param tls: The tls of this V1beta1ConfidentialSpec.  # noqa: E501
+        :type: V1beta1ConfidentialTLSSpec
+        """
+
+        self._tls = tls
 
     def to_dict(self):
         """Returns the model properties as a dict"""

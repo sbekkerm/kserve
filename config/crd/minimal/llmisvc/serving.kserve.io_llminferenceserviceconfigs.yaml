@@ -229,6 +229,15 @@ spec:
                         type: boolean
                       resourceId:
                         type: string
+                      tls:
+                        properties:
+                          caResourceId:
+                            type: string
+                          certResourceId:
+                            type: string
+                          keyResourceId:
+                            type: string
+                        type: object
                     required:
                     - enabled
                     type: object

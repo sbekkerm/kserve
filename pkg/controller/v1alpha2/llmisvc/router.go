@@ -144,6 +144,30 @@ func (r *LLMISVCReconciler) reconcileRouter(ctx context.Context, llmSvc *v1alpha
 		return r.schedulerReconcileError(llmSvc, err)
 	}
 
+	// Confidential TLS passthrough replaces HTTPRoute with a TLSRoute.
+	if confidentialTLSPassthrough(llmSvc) {
+		if err := r.deleteManagedHTTPRoute(ctx, llmSvc, cfg); err != nil {
+			llmSvc.MarkHTTPRoutesNotReady("HTTPRouteReconcileError", "%s", err.Error())
+			return fmt.Errorf("failed to delete HTTPRoute for TLS passthrough: %w", err)
+		}
+		resolvedGWs, err := r.reconcileTLSRoutes(ctx, llmSvc, cfg)
+		if err != nil {
+			llmSvc.MarkHTTPRoutesNotReady("TLSRouteReconcileError", "%s", err.Error())
+			return fmt.Errorf("failed to reconcile TLS routes: %w", err)
+		}
+		if err := r.reconcileRouterPlatformNetworking(ctx, llmSvc); err != nil {
+			llmSvc.MarkHTTPRoutesNotReady("PlatformNetworkingReconcileError", "Failed to reconcile platform networking: %v", err.Error())
+			return fmt.Errorf("failed to reconcile router platform networking: %w", err)
+		}
+		llmSvc.MarkInferencePoolReadyUnset()
+		r.EvaluateGatewayConditions(ctx, llmSvc, resolvedGWs)
+		return nil
+	}
+
+	if err := r.deleteManagedTLSRoute(ctx, llmSvc); err != nil {
+		return fmt.Errorf("failed to delete leftover TLSRoute: %w", err)
+	}
+
 	// Reconcile HTTP routes for traffic routing
 	// We do not support Gateway's spec, when creating HTTPRoutes either the default gateway or those provided
 	// as refs are attached to reconciled routes

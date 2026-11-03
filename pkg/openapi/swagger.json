@@ -2653,6 +2653,28 @@
         "resourceId": {
           "description": "ResourceId is the KBS resource identifier for the decryption key, in the format kbs:///\u003crepo\u003e/\u003ctype\u003e/\u003ctag\u003e.",
           "type": "string"
+        },
+        "tls": {
+          "description": "TLS fetches serving certificates from KBS into the TEE so the private key is never stored in a Kubernetes Secret.",
+          "$ref": "#/definitions/v1beta1.ConfidentialTLSSpec"
+        }
+      }
+    },
+    "v1beta1.ConfidentialTLSSpec": {
+      "description": "ConfidentialTLSSpec identifies KBS resources for the serving TLS material.",
+      "type": "object",
+      "properties": {
+        "caResourceId": {
+          "description": "CAResourceId is the KBS resource identifier for ca.crt, in the format kbs:///\u003crepo\u003e/\u003ctype\u003e/\u003ctag\u003e.",
+          "type": "string"
+        },
+        "certResourceId": {
+          "description": "CertResourceId is the KBS resource identifier for tls.crt, in the format kbs:///\u003crepo\u003e/\u003ctype\u003e/\u003ctag\u003e.",
+          "type": "string"
+        },
+        "keyResourceId": {
+          "description": "KeyResourceId is the KBS resource identifier for tls.key, in the format kbs:///\u003crepo\u003e/\u003ctype\u003e/\u003ctag\u003e.",
+          "type": "string"
         }
       }
     },

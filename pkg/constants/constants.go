@@ -200,6 +200,9 @@ var (
 	KernelCacheNodeGroupSelectionSourceAnnotationKey = InferenceServiceInternalAnnotationsPrefix + "/kernelcache-nodegroup-selection-source"
 	ConfidentialEnabledAnnotationKey                 = InferenceServiceInternalAnnotationsPrefix + "/confidential-enabled"
 	ConfidentialResourceIdAnnotationKey              = InferenceServiceInternalAnnotationsPrefix + "/confidential-resource-id"
+	ConfidentialTLSCertResourceIdAnnotationKey       = InferenceServiceInternalAnnotationsPrefix + "/confidential-tls-cert-resource-id"
+	ConfidentialTLSKeyResourceIdAnnotationKey        = InferenceServiceInternalAnnotationsPrefix + "/confidential-tls-key-resource-id"
+	ConfidentialTLSCAResourceIdAnnotationKey         = InferenceServiceInternalAnnotationsPrefix + "/confidential-tls-ca-resource-id"
 	LocalModelLoRAAnnotationKey                      = InferenceServiceInternalAnnotationsPrefix + "/localmodel-lora"
 )
 
@@ -347,8 +350,17 @@ var DefaultGPUResourceTypeList = []string{
 
 // Confidential model serving environment variables
 const (
-	ConfidentialEnabledEnvVar    = "CONFIDENTIAL_ENABLED"
-	ConfidentialResourceIdEnvVar = "CONFIDENTIAL_RESOURCE_ID"
+	ConfidentialEnabledEnvVar           = "CONFIDENTIAL_ENABLED"
+	ConfidentialResourceIdEnvVar        = "CONFIDENTIAL_RESOURCE_ID"
+	ConfidentialTLSCertResourceIdEnvVar = "CONFIDENTIAL_TLS_CERT_RESOURCE_ID"
+	ConfidentialTLSKeyResourceIdEnvVar  = "CONFIDENTIAL_TLS_KEY_RESOURCE_ID"
+	ConfidentialTLSCAResourceIdEnvVar   = "CONFIDENTIAL_TLS_CA_RESOURCE_ID"
+)
+
+// Confidential TLS volume mounted at the serving cert path inside the TEE.
+const (
+	ConfidentialTLSCertsVolumeName = "tls-certs"
+	ConfidentialTLSCertsMountPath  = "/var/run/kserve/tls"
 )
 
 // InferenceService Environment Variables

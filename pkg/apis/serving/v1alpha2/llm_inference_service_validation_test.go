@@ -802,9 +802,14 @@ func TestValidateManagedDRAAnnotations(t *testing.T) {
 }
 
 func TestValidateConfidential(t *testing.T) {
+	validTLS := &ConfidentialTLSSpec{
+		CertResourceId: ptr.To("kbs:///default/cert/tls-crt"),
+		KeyResourceId:  ptr.To("kbs:///default/cert/tls-key"),
+	}
 	tests := []struct {
 		name           string
 		confidential   *ConfidentialSpec
+		router         *RouterSpec
 		modelURI       apis.URL
 		wantErrCount   int
 		wantErrStrings []string
@@ -823,14 +828,26 @@ func TestValidateConfidential(t *testing.T) {
 			wantErrCount: 0,
 		},
 		{
-			name:         "confidential enabled with valid resourceId",
+			name:         "confidential enabled with valid resourceId warns without tls",
 			confidential: &ConfidentialSpec{Enabled: true, ResourceId: ptr.To("kbs:///default/key/model-key")},
 			modelURI:     apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"},
 			wantErrCount: 0,
+			wantWarnings: []string{"confidential.tls"},
 		},
 		{
-			name:         "confidential enabled without resourceId",
+			name:         "confidential enabled without resourceId warns without tls",
 			confidential: &ConfidentialSpec{Enabled: true},
+			modelURI:     apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"},
+			wantErrCount: 0,
+			wantWarnings: []string{"confidential.tls"},
+		},
+		{
+			name: "confidential enabled with tls does not warn",
+			confidential: &ConfidentialSpec{
+				Enabled:    true,
+				ResourceId: ptr.To("kbs:///default/key/model-key"),
+				TLS:        validTLS,
+			},
 			modelURI:     apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"},
 			wantErrCount: 0,
 		},
@@ -839,14 +856,14 @@ func TestValidateConfidential(t *testing.T) {
 			confidential: &ConfidentialSpec{Enabled: true},
 			modelURI:     apis.URL{Scheme: "oci", Host: "registry/model:latest"},
 			wantErrCount: 0,
-			wantWarnings: []string{"OCI URIs"},
+			wantWarnings: []string{"OCI URIs", "confidential.tls"},
 		},
 		{
 			name:         "confidential enabled with PVC URI warns",
 			confidential: &ConfidentialSpec{Enabled: true},
 			modelURI:     apis.URL{Scheme: "pvc", Host: "my-pvc/model-dir"},
 			wantErrCount: 0,
-			wantWarnings: []string{"PVC URIs"},
+			wantWarnings: []string{"PVC URIs", "confidential.tls"},
 		},
 		{
 			name:           "confidential with malformed resourceId",
@@ -854,6 +871,43 @@ func TestValidateConfidential(t *testing.T) {
 			modelURI:       apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"},
 			wantErrCount:   1,
 			wantErrStrings: []string{"kbs:///<repo>/<type>/<tag>"},
+			wantWarnings:   []string{"confidential.tls"},
+		},
+		{
+			name: "enabled without tls allows scheduler",
+			confidential: &ConfidentialSpec{
+				Enabled:    true,
+				ResourceId: ptr.To("kbs:///default/key/model-key"),
+			},
+			router:       &RouterSpec{Scheduler: &SchedulerSpec{}},
+			modelURI:     apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"},
+			wantErrCount: 0,
+			wantWarnings: []string{"confidential.tls"},
+		},
+		{
+			name: "tls with scheduler is rejected",
+			confidential: &ConfidentialSpec{
+				Enabled: true,
+				TLS:     validTLS,
+			},
+			router:         &RouterSpec{Scheduler: &SchedulerSpec{}},
+			modelURI:       apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"},
+			wantErrCount:   1,
+			wantErrStrings: []string{"spec.router.scheduler"},
+		},
+		{
+			name: "tls with scheduler and route is rejected",
+			confidential: &ConfidentialSpec{
+				Enabled: true,
+				TLS:     validTLS,
+			},
+			router: &RouterSpec{
+				Scheduler: &SchedulerSpec{},
+				Route:     &GatewayRoutesSpec{},
+			},
+			modelURI:       apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"},
+			wantErrCount:   2,
+			wantErrStrings: []string{"spec.router.scheduler", "spec.router.route"},
 		},
 	}
 
@@ -870,6 +924,7 @@ func TestValidateConfidential(t *testing.T) {
 						URI:          tt.modelURI,
 						Confidential: tt.confidential,
 					},
+					Router: tt.router,
 				},
 			}
 			warnings, errs := validator.validateConfidential(llmSvc)

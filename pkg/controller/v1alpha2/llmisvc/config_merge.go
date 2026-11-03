@@ -730,9 +730,14 @@ func (r *LLMISVCReconciler) combineBaseRefsConfig(ctx context.Context, llmSvc *v
 		refs = append(refs, presetRef(wr.Resolve(llmSvc, configTokenizerName)))
 	}
 	if resolvedSpec.Router != nil && resolvedSpec.Router.Route != nil && !resolvedSpec.Router.Route.HTTP.HasRefs() {
-		// For the HTTP route configuration we don't use versioned defaults since this configuration depends on the
-		// GW API provider version.
-		refs = append(refs, presetRef(configRouterRouteName))
+		// Confidential TLS plus scheduler cannot share a listener. Skip the
+		// HTTPRoute preset so a well-known config does not inject path-based
+		// HTTPRoute rules onto that combination; admission already rejects it.
+		if resolvedSpec.Model.Confidential == nil || resolvedSpec.Model.Confidential.TLS == nil || resolvedSpec.Router.Scheduler == nil {
+			// For the HTTP route configuration we don't use versioned defaults since this configuration depends on the
+			// GW API provider version.
+			refs = append(refs, presetRef(configRouterRouteName))
+		}
 	}
 	// Inject tracing default configs when tracing is enabled (field is non-nil)
 	if resolvedSpec.Tracing != nil {
@@ -902,6 +907,10 @@ func (r *LLMISVCReconciler) combineBaseRefsConfig(ctx context.Context, llmSvc *v
 	llmSvcCfg, err = ReplaceVariables(&effectiveSvc, llmSvcCfg, reconcilerConfig)
 	if err != nil {
 		return &CombinedConfig{Config: llmSvcCfg, AppliedConfigRefs: appliedRefs}, err
+	}
+
+	if llmSvcCfg.Spec.Model.Confidential != nil && llmSvcCfg.Spec.Model.Confidential.TLS != nil {
+		applyConfidentialTLSVolumes(&llmSvcCfg.Spec)
 	}
 
 	// Publisher path matches are normalized here, before reconcileBaseRefs
@@ -1392,11 +1401,15 @@ func ReplaceVariables(llmSvc *v1alpha2.LLMInferenceService, llmSvcCfg *v1alpha2.
 	buf := bytes.NewBuffer(nil)
 	var gc templateGlobalConfig
 	if reconcilerConfig != nil {
+		enableTLS := reconcilerConfig.EnableTLS
+		if llmSvc.Spec.Model.Confidential != nil && llmSvc.Spec.Model.Confidential.TLS != nil {
+			enableTLS = true
+		}
 		gc = templateGlobalConfig{
 			SystemNamespace:             reconcilerConfig.SystemNamespace,
 			IngressGatewayName:          reconcilerConfig.IngressGatewayName,
 			IngressGatewayNamespace:     reconcilerConfig.IngressGatewayNamespace,
-			EnableTLS:                   reconcilerConfig.EnableTLS,
+			EnableTLS:                   enableTLS,
 			TLSMinVersion:               reconcilerConfig.TLSMinVersion,
 			TLSCipherSuites:             reconcilerConfig.TLSCipherSuites,
 			TLSCipherSuitesOpenSSL:      reconcilerConfig.TLSCipherSuitesOpenSSL,

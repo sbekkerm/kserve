@@ -356,6 +356,18 @@ func addConfidentialAnnotations(predictor *v1beta1.PredictorSpec, annotations ma
 	if confidential.ResourceId != nil && *confidential.ResourceId != "" {
 		annotations[constants.ConfidentialResourceIdAnnotationKey] = *confidential.ResourceId
 	}
+	if confidential.TLS == nil {
+		return
+	}
+	if confidential.TLS.CertResourceId != nil && *confidential.TLS.CertResourceId != "" {
+		annotations[constants.ConfidentialTLSCertResourceIdAnnotationKey] = *confidential.TLS.CertResourceId
+	}
+	if confidential.TLS.KeyResourceId != nil && *confidential.TLS.KeyResourceId != "" {
+		annotations[constants.ConfidentialTLSKeyResourceIdAnnotationKey] = *confidential.TLS.KeyResourceId
+	}
+	if confidential.TLS.CAResourceId != nil && *confidential.TLS.CAResourceId != "" {
+		annotations[constants.ConfidentialTLSCAResourceIdAnnotationKey] = *confidential.TLS.CAResourceId
+	}
 }
 
 func (p *Predictor) reconcileModel(ctx context.Context, isvc *v1beta1.InferenceService, multiNodeEnabled bool) (v1alpha1.ServingRuntimeSpec, map[string]string, error) {

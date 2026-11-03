@@ -55,6 +55,20 @@ const (
 	certificateExpirationRenewBufferDuration = certificateDuration / 5
 )
 
+func selfSignedCertsSecretName(llmSvc *v1alpha2.LLMInferenceService) string {
+	return kmeta.ChildName(llmSvc.GetName(), "-kserve-self-signed-certs")
+}
+
+func (r *LLMISVCReconciler) deleteSelfSignedCertsSecret(ctx context.Context, llmSvc *v1alpha2.LLMInferenceService) error {
+	expected := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      selfSignedCertsSecretName(llmSvc),
+			Namespace: llmSvc.GetNamespace(),
+		},
+	}
+	return Delete(ctx, r, llmSvc, expected)
+}
+
 // reconcileSelfSignedCertsSecret reconciles the secret containing self-signed certs used by the server to serve TLS.
 // These self-signed certs are used for cluster internal communication encryption by the workload and the scheduler.
 // The certificates are automatically renewed before expiration to ensure continuous secure communication.
@@ -131,7 +145,7 @@ func (r *LLMISVCReconciler) expectedSelfSignedCertsSecret(llmSvc *v1alpha2.LLMIn
 
 	expected := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kmeta.ChildName(llmSvc.GetName(), "-kserve-self-signed-certs"),
+			Name:      selfSignedCertsSecretName(llmSvc),
 			Namespace: llmSvc.GetNamespace(),
 			Labels: map[string]string{
 				constants.KubernetesComponentLabelKey: constants.LLMComponentWorkload,

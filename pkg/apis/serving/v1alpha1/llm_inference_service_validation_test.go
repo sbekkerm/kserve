@@ -623,9 +623,10 @@ func TestValidateCreateConfidential_V1Alpha1(t *testing.T) {
 		wantErr      string
 		wantWarning  string
 	}{
-		{name: "valid resourceId is admitted", confidential: &ConfidentialSpec{Enabled: true, ResourceId: ptr.To("kbs:///default/key/model-key")}, uri: apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"}},
-		{name: "malformed resourceId is rejected", confidential: &ConfidentialSpec{Enabled: true, ResourceId: ptr.To("invalid-id")}, uri: apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"}, wantErr: "spec.model.confidential.resourceId"},
+		{name: "valid resourceId is admitted with tls warning", confidential: &ConfidentialSpec{Enabled: true, ResourceId: ptr.To("kbs:///default/key/model-key")}, uri: apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"}, wantWarning: "confidential.tls"},
+		{name: "malformed resourceId is rejected", confidential: &ConfidentialSpec{Enabled: true, ResourceId: ptr.To("invalid-id")}, uri: apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"}, wantErr: "spec.model.confidential.resourceId", wantWarning: "confidential.tls"},
 		{name: "OCI URI warns", confidential: &ConfidentialSpec{Enabled: true}, uri: apis.URL{Scheme: "oci", Host: "registry/model:latest"}, wantWarning: "OCI URIs"},
+		{name: "enabled with tls is admitted without missing-tls warning", confidential: &ConfidentialSpec{Enabled: true, TLS: &ConfidentialTLSSpec{CertResourceId: ptr.To("kbs:///default/cert/tls-crt"), KeyResourceId: ptr.To("kbs:///default/cert/tls-key")}}, uri: apis.URL{Scheme: "hf", Host: "meta-llama/Llama-2-7b"}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := newBaseLLMInferenceService()
@@ -635,8 +636,15 @@ func TestValidateCreateConfidential_V1Alpha1(t *testing.T) {
 			warnings, err := validator.ValidateCreate(t.Context(), svc)
 
 			if tt.wantWarning != "" {
-				require.Len(t, warnings, 1)
-				assert.Contains(t, warnings[0], tt.wantWarning)
+				require.NotEmpty(t, warnings)
+				found := false
+				for _, w := range warnings {
+					if strings.Contains(w, tt.wantWarning) {
+						found = true
+						break
+					}
+				}
+				assert.True(t, found, "expected warning containing %q, got %v", tt.wantWarning, warnings)
 			} else {
 				assert.Empty(t, warnings)
 			}

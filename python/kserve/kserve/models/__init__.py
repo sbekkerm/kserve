@@ -113,6 +113,7 @@ from kserve.models.v1beta1_canary_status import V1beta1CanaryStatus
 from kserve.models.v1beta1_component_extension_spec import V1beta1ComponentExtensionSpec
 from kserve.models.v1beta1_component_status_spec import V1beta1ComponentStatusSpec
 from kserve.models.v1beta1_confidential_spec import V1beta1ConfidentialSpec
+from kserve.models.v1beta1_confidential_tls_spec import V1beta1ConfidentialTLSSpec
 from kserve.models.v1beta1_custom_explainer import V1beta1CustomExplainer
 from kserve.models.v1beta1_custom_predictor import V1beta1CustomPredictor
 from kserve.models.v1beta1_custom_transformer import V1beta1CustomTransformer

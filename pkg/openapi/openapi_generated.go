@@ -114,6 +114,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kserve/kserve/pkg/apis/serving/v1beta1.ComponentExtensionSpec":                schema_pkg_apis_serving_v1beta1_ComponentExtensionSpec(ref),
 		"github.com/kserve/kserve/pkg/apis/serving/v1beta1.ComponentStatusSpec":                   schema_pkg_apis_serving_v1beta1_ComponentStatusSpec(ref),
 		"github.com/kserve/kserve/pkg/apis/serving/v1beta1.ConfidentialSpec":                      schema_pkg_apis_serving_v1beta1_ConfidentialSpec(ref),
+		"github.com/kserve/kserve/pkg/apis/serving/v1beta1.ConfidentialTLSSpec":                   schema_pkg_apis_serving_v1beta1_ConfidentialTLSSpec(ref),
 		"github.com/kserve/kserve/pkg/apis/serving/v1beta1.CustomExplainer":                       schema_pkg_apis_serving_v1beta1_CustomExplainer(ref),
 		"github.com/kserve/kserve/pkg/apis/serving/v1beta1.CustomPredictor":                       schema_pkg_apis_serving_v1beta1_CustomPredictor(ref),
 		"github.com/kserve/kserve/pkg/apis/serving/v1beta1.CustomTransformer":                     schema_pkg_apis_serving_v1beta1_CustomTransformer(ref),
@@ -4872,8 +4873,50 @@ func schema_pkg_apis_serving_v1beta1_ConfidentialSpec(ref common.ReferenceCallba
 							Format:      "",
 						},
 					},
+					"tls": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TLS fetches serving certificates from KBS into the TEE so the private key is never stored in a Kubernetes Secret.",
+							Ref:         ref("github.com/kserve/kserve/pkg/apis/serving/v1beta1.ConfidentialTLSSpec"),
+						},
+					},
 				},
 				Required: []string{"enabled"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kserve/kserve/pkg/apis/serving/v1beta1.ConfidentialTLSSpec"},
+	}
+}
+
+func schema_pkg_apis_serving_v1beta1_ConfidentialTLSSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ConfidentialTLSSpec identifies KBS resources for the serving TLS material.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"certResourceId": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CertResourceId is the KBS resource identifier for tls.crt, in the format kbs:///<repo>/<type>/<tag>.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"keyResourceId": {
+						SchemaProps: spec.SchemaProps{
+							Description: "KeyResourceId is the KBS resource identifier for tls.key, in the format kbs:///<repo>/<type>/<tag>.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"caResourceId": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CAResourceId is the KBS resource identifier for ca.crt, in the format kbs:///<repo>/<type>/<tag>.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 	}

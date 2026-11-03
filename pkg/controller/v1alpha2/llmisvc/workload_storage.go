@@ -225,6 +225,35 @@ func (r *LLMISVCReconciler) attachModelArtifacts(ctx context.Context, serviceAcc
 		}
 	}
 
+	return r.ensureConfidentialTLSInitializer(llmSvc, curr, podSpec, config.StorageConfig)
+}
+
+// ensureConfidentialTLSInitializer attaches a storage-initializer whose only job is
+// fetching serving PEMs from KBS when the model URI did not already add one
+// (PVC, OCI native, storage-initializer disabled is still skipped above).
+func (r *LLMISVCReconciler) ensureConfidentialTLSInitializer(
+	llmSvc *v1alpha2.LLMInferenceService,
+	curr corev1.PodSpec,
+	podSpec *corev1.PodSpec,
+	storageConfig *kserveTypes.StorageInitializerConfig,
+) error {
+	if !confidentialTLSEnabled(llmSvc) {
+		return nil
+	}
+	if utils.GetInitContainerWithName(podSpec, constants.StorageInitializerContainerName) != nil {
+		return nil
+	}
+
+	copied := *storageConfig
+	for _, initContainer := range curr.InitContainers {
+		if initContainer.Name == constants.StorageInitializerContainerName {
+			copied.Image = initContainer.Image
+		}
+	}
+	initContainer := utils.CreateInitContainerWithConfig(&copied, nil)
+	applyConfidentialInitConfig(initContainer, llmSvc)
+	attachConfidentialTLSCertsMount(podSpec, initContainer)
+	podSpec.InitContainers = append(podSpec.InitContainers, *initContainer)
 	return nil
 }
 
@@ -447,11 +476,10 @@ func (r *LLMISVCReconciler) attachStorageInitializer(llmSvc *v1alpha2.LLMInferen
 
 	// Inject confidential env vars before appending to the pod spec
 	if confidential != nil && confidential.Enabled {
-		resourceId := ""
-		if confidential.ResourceId != nil {
-			resourceId = *confidential.ResourceId
+		applyConfidentialInitConfig(initContainer, llmSvc)
+		if confidential.TLS != nil {
+			attachConfidentialTLSCertsMount(podSpec, initContainer)
 		}
-		utils.ApplyConfidentialContainerConfig(initContainer, resourceId)
 	}
 
 	if userOverride != nil {
@@ -527,6 +555,13 @@ func (r *LLMISVCReconciler) attachMultiStorageDownloads(
 
 	initC := utils.CreateInitContainerWithConfig(&copied, args)
 
+	if confidential := llmSvc.Spec.Model.Confidential; confidential != nil && confidential.Enabled {
+		applyConfidentialInitConfig(initC, llmSvc)
+		if confidential.TLS != nil {
+			attachConfidentialTLSCertsMount(podSpec, initC)
+		}
+	}
+
 	if userOverride != nil {
 		merged, err := utils.MergeContainerWithPatch(*initC, *userOverride)
 		if err != nil {
@@ -597,6 +632,10 @@ func (r *LLMISVCReconciler) attachMultiStorageDownloads(
 	}
 
 	injectCaBundle(llmSvc.Namespace, podSpec, initPtr, storageConfig)
+
+	if confidential := llmSvc.Spec.Model.Confidential; confidential != nil && confidential.TLS != nil {
+		attachConfidentialTLSCertsMount(podSpec, initPtr)
+	}
 	return nil
 }
 

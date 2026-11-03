@@ -6449,12 +6449,30 @@ func TestApplyConfidentialConfig(t *testing.T) {
 				constants.ConfidentialEnabledEnvVar: "true",
 			},
 		},
+		"confidential tls resource ids and emptyDir volume": {
+			initContainer: corev1.Container{
+				Name:  constants.StorageInitializerContainerName,
+				Image: "kserve/storage-initializer:latest",
+			},
+			annotations: map[string]string{
+				constants.ConfidentialEnabledAnnotationKey:           "true",
+				constants.ConfidentialTLSCertResourceIdAnnotationKey: "kbs:///default/cert/tls-crt",
+				constants.ConfidentialTLSKeyResourceIdAnnotationKey:  "kbs:///default/cert/tls-key",
+			},
+			expectedImage: "kserve/storage-initializer:latest",
+			expectedEnvs: map[string]string{
+				constants.ConfidentialEnabledEnvVar:           "true",
+				constants.ConfidentialTLSCertResourceIdEnvVar: "kbs:///default/cert/tls-crt",
+				constants.ConfidentialTLSKeyResourceIdEnvVar:  "kbs:///default/cert/tls-key",
+			},
+		},
 	}
 
 	for name, scenario := range scenarios {
 		t.Run(name, func(t *testing.T) {
 			container := scenario.initContainer.DeepCopy()
-			applyConfidentialConfig(container, scenario.annotations)
+			podSpec := &corev1.PodSpec{}
+			applyConfidentialConfig(container, podSpec, scenario.annotations)
 
 			assert.Equal(t, scenario.expectedImage, container.Image, "unexpected image")
 
@@ -6467,10 +6485,24 @@ func TestApplyConfidentialConfig(t *testing.T) {
 			}
 			// Ensure no unexpected confidential env vars
 			for _, env := range container.Env {
-				if env.Name == constants.ConfidentialEnabledEnvVar || env.Name == constants.ConfidentialResourceIdEnvVar {
+				if env.Name == constants.ConfidentialEnabledEnvVar ||
+					env.Name == constants.ConfidentialResourceIdEnvVar ||
+					env.Name == constants.ConfidentialTLSCertResourceIdEnvVar ||
+					env.Name == constants.ConfidentialTLSKeyResourceIdEnvVar ||
+					env.Name == constants.ConfidentialTLSCAResourceIdEnvVar {
 					_, expected := scenario.expectedEnvs[env.Name]
 					assert.True(t, expected, "unexpected env var %s", env.Name)
 				}
+			}
+
+			if scenario.expectedEnvs[constants.ConfidentialTLSCertResourceIdEnvVar] != "" {
+				require.Len(t, podSpec.Volumes, 1)
+				assert.Equal(t, constants.ConfidentialTLSCertsVolumeName, podSpec.Volumes[0].Name)
+				require.NotNil(t, podSpec.Volumes[0].EmptyDir)
+				assert.Equal(t, corev1.StorageMediumMemory, podSpec.Volumes[0].EmptyDir.Medium)
+				require.Len(t, container.VolumeMounts, 1)
+				assert.Equal(t, constants.ConfidentialTLSCertsMountPath, container.VolumeMounts[0].MountPath)
+				assert.False(t, container.VolumeMounts[0].ReadOnly)
 			}
 		})
 	}

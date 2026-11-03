@@ -15,10 +15,12 @@
 from .secret_resolver import SecretResolver, SecretResolutionError
 from .jwe_decryptor import JWEDecryptor
 from .cdh_client import CDHSecretResolver
+from .tls_certs import fetch_tls_certs
 
 __all__ = [
     "SecretResolver",
     "SecretResolutionError",
     "JWEDecryptor",
     "CDHSecretResolver",
+    "fetch_tls_certs",
 ]

@@ -655,7 +655,7 @@ PROMETHEUS_VERSION=83.4.0
 PROMETHEUS_ADAPTER_VERSION=5.3.0
 JAEGER_VERSION=4.7.0
 KSERVE_VERSION=v0.21.0
-ISTIO_VERSION=1.31.2
+ISTIO_VERSION=1.31.0-rc.0
 KEDA_VERSION=2.20.2
 OPENTELEMETRY_OPERATOR_VERSION=0.114.1
 LWS_VERSION=v1.0.0
@@ -15888,6 +15888,15 @@ spec:
                                   type: boolean
                                 resourceId:
                                   type: string
+                                tls:
+                                  properties:
+                                    caResourceId:
+                                      type: string
+                                    certResourceId:
+                                      type: string
+                                    keyResourceId:
+                                      type: string
+                                  type: object
                               required:
                               - enabled
                               type: object
@@ -17423,6 +17432,15 @@ spec:
                                   type: boolean
                                 resourceId:
                                   type: string
+                                tls:
+                                  properties:
+                                    caResourceId:
+                                      type: string
+                                    certResourceId:
+                                      type: string
+                                    keyResourceId:
+                                      type: string
+                                  type: object
                               required:
                               - enabled
                               type: object
@@ -18241,6 +18259,15 @@ spec:
                                   type: boolean
                                 resourceId:
                                   type: string
+                                tls:
+                                  properties:
+                                    caResourceId:
+                                      type: string
+                                    certResourceId:
+                                      type: string
+                                    keyResourceId:
+                                      type: string
+                                  type: object
                               required:
                               - enabled
                               type: object
@@ -19037,6 +19064,15 @@ spec:
                                   type: boolean
                                 resourceId:
                                   type: string
+                                tls:
+                                  properties:
+                                    caResourceId:
+                                      type: string
+                                    certResourceId:
+                                      type: string
+                                    keyResourceId:
+                                      type: string
+                                  type: object
                               required:
                               - enabled
                               type: object
@@ -19826,6 +19862,15 @@ spec:
                                   type: boolean
                                 resourceId:
                                   type: string
+                                tls:
+                                  properties:
+                                    caResourceId:
+                                      type: string
+                                    certResourceId:
+                                      type: string
+                                    keyResourceId:
+                                      type: string
+                                  type: object
                               required:
                               - enabled
                               type: object
@@ -20600,6 +20645,15 @@ spec:
                                   type: boolean
                                 resourceId:
                                   type: string
+                                tls:
+                                  properties:
+                                    caResourceId:
+                                      type: string
+                                    certResourceId:
+                                      type: string
+                                    keyResourceId:
+                                      type: string
+                                  type: object
                               required:
                               - enabled
                               type: object
@@ -21381,6 +21435,15 @@ spec:
                                   type: boolean
                                 resourceId:
                                   type: string
+                                tls:
+                                  properties:
+                                    caResourceId:
+                                      type: string
+                                    certResourceId:
+                                      type: string
+                                    keyResourceId:
+                                      type: string
+                                  type: object
                               required:
                               - enabled
                               type: object
@@ -22339,6 +22402,15 @@ spec:
                                   type: boolean
                                 resourceId:
                                   type: string
+                                tls:
+                                  properties:
+                                    caResourceId:
+                                      type: string
+                                    certResourceId:
+                                      type: string
+                                    keyResourceId:
+                                      type: string
+                                  type: object
                               required:
                               - enabled
                               type: object
@@ -23134,6 +23206,15 @@ spec:
                                   type: boolean
                                 resourceId:
                                   type: string
+                                tls:
+                                  properties:
+                                    caResourceId:
+                                      type: string
+                                    certResourceId:
+                                      type: string
+                                    keyResourceId:
+                                      type: string
+                                  type: object
                               required:
                               - enabled
                               type: object
@@ -23988,6 +24069,15 @@ spec:
                                   type: boolean
                                 resourceId:
                                   type: string
+                                tls:
+                                  properties:
+                                    caResourceId:
+                                      type: string
+                                    certResourceId:
+                                      type: string
+                                    keyResourceId:
+                                      type: string
+                                  type: object
                               required:
                               - enabled
                               type: object
@@ -29506,6 +29596,15 @@ spec:
                                   type: boolean
                                 resourceId:
                                   type: string
+                                tls:
+                                  properties:
+                                    caResourceId:
+                                      type: string
+                                    certResourceId:
+                                      type: string
+                                    keyResourceId:
+                                      type: string
+                                  type: object
                               required:
                               - enabled
                               type: object
@@ -36063,6 +36162,15 @@ spec:
                             type: boolean
                           resourceId:
                             type: string
+                          tls:
+                            properties:
+                              caResourceId:
+                                type: string
+                              certResourceId:
+                                type: string
+                              keyResourceId:
+                                type: string
+                            type: object
                         required:
                         - enabled
                         type: object
@@ -37588,6 +37696,15 @@ spec:
                             type: boolean
                           resourceId:
                             type: string
+                          tls:
+                            properties:
+                              caResourceId:
+                                type: string
+                              certResourceId:
+                                type: string
+                              keyResourceId:
+                                type: string
+                            type: object
                         required:
                         - enabled
                         type: object
@@ -38396,6 +38513,15 @@ spec:
                             type: boolean
                           resourceId:
                             type: string
+                          tls:
+                            properties:
+                              caResourceId:
+                                type: string
+                              certResourceId:
+                                type: string
+                              keyResourceId:
+                                type: string
+                            type: object
                         required:
                         - enabled
                         type: object
@@ -39181,6 +39307,15 @@ spec:
                             type: boolean
                           resourceId:
                             type: string
+                          tls:
+                            properties:
+                              caResourceId:
+                                type: string
+                              certResourceId:
+                                type: string
+                              keyResourceId:
+                                type: string
+                            type: object
                         required:
                         - enabled
                         type: object
@@ -39958,6 +40093,15 @@ spec:
                             type: boolean
                           resourceId:
                             type: string
+                          tls:
+                            properties:
+                              caResourceId:
+                                type: string
+                              certResourceId:
+                                type: string
+                              keyResourceId:
+                                type: string
+                            type: object
                         required:
                         - enabled
                         type: object
@@ -40722,6 +40866,15 @@ spec:
                             type: boolean
                           resourceId:
                             type: string
+                          tls:
+                            properties:
+                              caResourceId:
+                                type: string
+                              certResourceId:
+                                type: string
+                              keyResourceId:
+                                type: string
+                            type: object
                         required:
                         - enabled
                         type: object
@@ -41493,6 +41646,15 @@ spec:
                             type: boolean
                           resourceId:
                             type: string
+                          tls:
+                            properties:
+                              caResourceId:
+                                type: string
+                              certResourceId:
+                                type: string
+                              keyResourceId:
+                                type: string
+                            type: object
                         required:
                         - enabled
                         type: object
@@ -42441,6 +42603,15 @@ spec:
                             type: boolean
                           resourceId:
                             type: string
+                          tls:
+                            properties:
+                              caResourceId:
+                                type: string
+                              certResourceId:
+                                type: string
+                              keyResourceId:
+                                type: string
+                            type: object
                         required:
                         - enabled
                         type: object
@@ -43226,6 +43397,15 @@ spec:
                             type: boolean
                           resourceId:
                             type: string
+                          tls:
+                            properties:
+                              caResourceId:
+                                type: string
+                              certResourceId:
+                                type: string
+                              keyResourceId:
+                                type: string
+                            type: object
                         required:
                         - enabled
                         type: object
@@ -44070,6 +44250,15 @@ spec:
                             type: boolean
                           resourceId:
                             type: string
+                          tls:
+                            properties:
+                              caResourceId:
+                                type: string
+                              certResourceId:
+                                type: string
+                              keyResourceId:
+                                type: string
+                            type: object
                         required:
                         - enabled
                         type: object
@@ -49578,6 +49767,15 @@ spec:
                             type: boolean
                           resourceId:
                             type: string
+                          tls:
+                            properties:
+                              caResourceId:
+                                type: string
+                              certResourceId:
+                                type: string
+                              keyResourceId:
+                                type: string
+                            type: object
                         required:
                         - enabled
                         type: object

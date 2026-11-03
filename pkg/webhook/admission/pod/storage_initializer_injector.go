@@ -704,7 +704,7 @@ func CommonStorageInitialization(ctx context.Context, params *StorageInitializer
 		utils.AddDefaultHuggingFaceEnvVars(initContainer)
 
 		// Apply confidential model serving configuration if enabled via annotations
-		applyConfidentialConfig(initContainer, params.IsvcAnnotations)
+		applyConfidentialConfig(initContainer, params.PodSpec, params.IsvcAnnotations)
 
 		// InferenceService env is applied to the serving container. hf:// downloads
 		// run here, so copy auth variables the initializer does not already have.
@@ -1061,8 +1061,10 @@ func awsSkipContainersContains(annotationValue, containerName string) bool {
 }
 
 // applyConfidentialConfig injects environment variables for confidential model
-// serving when enabled via pod annotations.
-func applyConfidentialConfig(initContainer *corev1.Container, annotations map[string]string) {
+// serving when enabled via pod annotations. When TLS resource IDs are set, it
+// also mounts an emptyDir at the serving cert path so the initializer can write
+// PEMs fetched from KBS.
+func applyConfidentialConfig(initContainer *corev1.Container, podSpec *corev1.PodSpec, annotations map[string]string) {
 	if annotations[constants.ConfidentialEnabledAnnotationKey] != "true" {
 		return
 	}
@@ -1070,7 +1072,46 @@ func applyConfidentialConfig(initContainer *corev1.Container, annotations map[st
 	utils.ApplyConfidentialContainerConfig(
 		initContainer,
 		annotations[constants.ConfidentialResourceIdAnnotationKey],
+		utils.ConfidentialTLSEnvFromAnnotations(annotations),
 	)
+
+	if utils.ConfidentialTLSEnvFromAnnotations(annotations) == nil || podSpec == nil {
+		return
+	}
+	ensureConfidentialTLSCertsVolume(podSpec)
+	ensureConfidentialTLSCertsMount(initContainer, false)
+}
+
+func ensureConfidentialTLSCertsVolume(podSpec *corev1.PodSpec) {
+	for i := range podSpec.Volumes {
+		if podSpec.Volumes[i].Name == constants.ConfidentialTLSCertsVolumeName {
+			podSpec.Volumes[i].VolumeSource = corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{Medium: corev1.StorageMediumMemory},
+			}
+			return
+		}
+	}
+	podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
+		Name: constants.ConfidentialTLSCertsVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{Medium: corev1.StorageMediumMemory},
+		},
+	})
+}
+
+func ensureConfidentialTLSCertsMount(container *corev1.Container, readOnly bool) {
+	for i := range container.VolumeMounts {
+		if container.VolumeMounts[i].Name == constants.ConfidentialTLSCertsVolumeName {
+			container.VolumeMounts[i].MountPath = constants.ConfidentialTLSCertsMountPath
+			container.VolumeMounts[i].ReadOnly = readOnly
+			return
+		}
+	}
+	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+		Name:      constants.ConfidentialTLSCertsVolumeName,
+		MountPath: constants.ConfidentialTLSCertsMountPath,
+		ReadOnly:  readOnly,
+	})
 }
 
 // InjectStorageInitializer injects an init container to provision model data

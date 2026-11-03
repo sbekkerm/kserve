@@ -162,6 +162,26 @@ type ConfidentialSpec struct {
 	// in the format kbs:///<repo>/<type>/<tag>.
 	// +optional
 	ResourceId *string `json:"resourceId,omitempty"`
+	// TLS fetches serving certificates from KBS into the TEE so the private key
+	// is never stored in a Kubernetes Secret.
+	// +optional
+	TLS *ConfidentialTLSSpec `json:"tls,omitempty"`
+}
+
+// ConfidentialTLSSpec identifies KBS resources for the serving TLS material.
+type ConfidentialTLSSpec struct {
+	// CertResourceId is the KBS resource identifier for tls.crt,
+	// in the format kbs:///<repo>/<type>/<tag>.
+	// +optional
+	CertResourceId *string `json:"certResourceId,omitempty"`
+	// KeyResourceId is the KBS resource identifier for tls.key,
+	// in the format kbs:///<repo>/<type>/<tag>.
+	// +optional
+	KeyResourceId *string `json:"keyResourceId,omitempty"`
+	// CAResourceId is the KBS resource identifier for ca.crt,
+	// in the format kbs:///<repo>/<type>/<tag>.
+	// +optional
+	CAResourceId *string `json:"caResourceId,omitempty"`
 }
 
 // GetImplementations returns the implementations for the component

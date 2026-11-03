@@ -7,12 +7,16 @@ from kserve_storage.logging import configure_logging, logger
 
 configure_logging()
 
-if len(sys.argv) < 3 or len(sys.argv) % 2 != 1:
+# Allow a TLS-only run with no download pairs (PVC / already-present models).
+if len(sys.argv) == 1:
+    src_uris = []
+    dest_paths = []
+elif len(sys.argv) < 3 or len(sys.argv) % 2 != 1:
     print("Usage: initializer-entrypoint src_uri_0 dest_path_0 ... src_uri_n dest_path_n")
     sys.exit(1)
-
-src_uris = sys.argv[1::2]
-dest_paths = sys.argv[2::2]
+else:
+    src_uris = sys.argv[1::2]
+    dest_paths = sys.argv[2::2]
 
 logger.info("Initializing, args: (src_uri, dest_path): %s", list(zip(src_uris, dest_paths)))
 
@@ -22,24 +26,37 @@ for dest in dest_paths:
     if dest:
         os.makedirs(dest, exist_ok=True)
 
-try:
-    Storage.download_files(src_uris, dest_paths)
-except RuntimeError as e:
-    logger.error("Storage initialization failed: %s", e)
-    sys.exit(1)
-except Exception as e:
-    logger.error("Unexpected error during storage initialization: %s", e)
-    sys.exit(1)
+if src_uris:
+    try:
+        Storage.download_files(src_uris, dest_paths)
+    except RuntimeError as e:
+        logger.error("Storage initialization failed: %s", e)
+        sys.exit(1)
+    except Exception as e:
+        logger.error("Unexpected error during storage initialization: %s", e)
+        sys.exit(1)
 
-# Post-download decryption for confidential model serving
+# Post-download decryption for confidential model serving, and optional
+# serving-TLS fetch from KBS via CDH. Decrypt when CONFIDENTIAL_RESOURCE_ID is
+# set; fetch TLS when the TLS resource-id env vars are set.
 if os.environ.get("CONFIDENTIAL_ENABLED", "").lower() == "true":
-    from kserve_storage.confidential import JWEDecryptor, CDHSecretResolver
+    from kserve_storage.confidential import (
+        CDHSecretResolver,
+        JWEDecryptor,
+        fetch_tls_certs,
+    )
 
     resource_id = os.environ.get("CONFIDENTIAL_RESOURCE_ID", "")
-    if not resource_id:
-        logger.error("CONFIDENTIAL_RESOURCE_ID must be set when confidential mode is enabled")
+    cert_id = os.environ.get("CONFIDENTIAL_TLS_CERT_RESOURCE_ID", "")
+    key_id = os.environ.get("CONFIDENTIAL_TLS_KEY_RESOURCE_ID", "")
+    ca_id = os.environ.get("CONFIDENTIAL_TLS_CA_RESOURCE_ID", "")
+
+    if not resource_id and not (cert_id and key_id):
+        logger.error(
+            "CONFIDENTIAL_RESOURCE_ID or confidential TLS resource IDs must be set "
+            "when confidential mode is enabled"
+        )
         sys.exit(1)
-    logger.info("Confidential mode enabled, resource_id=%s", resource_id)
 
     try:
         # Select the appropriate SecretResolver based on available configuration.
@@ -51,14 +68,32 @@ if os.environ.get("CONFIDENTIAL_ENABLED", "").lower() == "true":
         # - Environment variable resolver: key passed directly via env var
         # - Cloud KMS resolver: retrieve key from a cloud provider KMS
         resolver = CDHSecretResolver()
-        decryptor = JWEDecryptor(resolver, resource_id=resource_id)
 
-        total_decrypted = 0
-        for dest_path in dest_paths:
-            decrypted = decryptor.decrypt_directory(dest_path, resource_id=resource_id)
-            total_decrypted += len(decrypted)
+        if resource_id:
+            logger.info("Confidential mode enabled, resource_id=%s", resource_id)
+            decryptor = JWEDecryptor(resolver, resource_id=resource_id)
 
-        logger.info("Confidential decryption complete: %d files decrypted", total_decrypted)
+            total_decrypted = 0
+            for dest_path in dest_paths:
+                decrypted = decryptor.decrypt_directory(dest_path, resource_id=resource_id)
+                total_decrypted += len(decrypted)
+
+            logger.info(
+                "Confidential decryption complete: %d files decrypted", total_decrypted
+            )
+
+        if cert_id or key_id:
+            logger.info(
+                "Fetching confidential TLS certs, cert_id=%s key_id=%s",
+                cert_id,
+                key_id,
+            )
+            fetch_tls_certs(
+                resolver,
+                cert_resource_id=cert_id,
+                key_resource_id=key_id,
+                ca_resource_id=ca_id or None,
+            )
     except Exception as e:
-        logger.error("Confidential decryption failed: %s", e)
+        logger.error("Confidential initialization failed: %s", e)
         sys.exit(1)

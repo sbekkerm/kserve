@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **enabled** | **bool** | Enabled controls whether confidential model serving is active. When true, the confidential storage initializer image is used and encrypted model artifacts are decrypted after download. | [default to False]
 **resource_id** | **str** | ResourceId is the KBS resource identifier for the decryption key, in the format kbs:///&lt;repo&gt;/&lt;type&gt;/&lt;tag&gt;. | [optional] 
+**tls** | [**V1beta1ConfidentialTLSSpec**](V1beta1ConfidentialTLSSpec.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

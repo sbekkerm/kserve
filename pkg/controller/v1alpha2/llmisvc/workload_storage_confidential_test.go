@@ -77,6 +77,24 @@ func TestAttachStorageInitializerConfidential(t *testing.T) {
 			},
 		},
 		{
+			name: "enabled with tls resource ids",
+			confidential: &v1alpha2.ConfidentialSpec{
+				Enabled: true,
+				TLS: &v1alpha2.ConfidentialTLSSpec{
+					CertResourceId: ptr.To("kbs:///default/cert/tls-crt"),
+					KeyResourceId:  ptr.To("kbs:///default/cert/tls-key"),
+					CAResourceId:   ptr.To("kbs:///default/cert/ca-crt"),
+				},
+			},
+			expectedImage: "kserve/storage-initializer:latest",
+			expectedEnvVars: map[string]string{
+				constants.ConfidentialEnabledEnvVar:           "true",
+				constants.ConfidentialTLSCertResourceIdEnvVar: "kbs:///default/cert/tls-crt",
+				constants.ConfidentialTLSKeyResourceIdEnvVar:  "kbs:///default/cert/tls-key",
+				constants.ConfidentialTLSCAResourceIdEnvVar:   "kbs:///default/cert/ca-crt",
+			},
+		},
+		{
 			name: "restart avoidance preserves existing image",
 			confidential: &v1alpha2.ConfidentialSpec{
 				Enabled: true,
@@ -153,6 +171,29 @@ func TestAttachStorageInitializerConfidential(t *testing.T) {
 					assert.NotEqual(t, constants.ConfidentialEnabledEnvVar, env.Name)
 					assert.NotEqual(t, constants.ConfidentialResourceIdEnvVar, env.Name)
 				}
+			}
+
+			if tc.expectedEnvVars[constants.ConfidentialTLSCertResourceIdEnvVar] != "" {
+				var vol *corev1.Volume
+				for i := range podSpec.Volumes {
+					if podSpec.Volumes[i].Name == constants.ConfidentialTLSCertsVolumeName {
+						vol = &podSpec.Volumes[i]
+						break
+					}
+				}
+				require.NotNil(t, vol, "tls-certs volume should exist")
+				require.NotNil(t, vol.EmptyDir)
+				assert.Equal(t, corev1.StorageMediumMemory, vol.EmptyDir.Medium)
+				var mount *corev1.VolumeMount
+				for i := range initContainer.VolumeMounts {
+					if initContainer.VolumeMounts[i].Name == constants.ConfidentialTLSCertsVolumeName {
+						mount = &initContainer.VolumeMounts[i]
+						break
+					}
+				}
+				require.NotNil(t, mount)
+				assert.Equal(t, constants.ConfidentialTLSCertsMountPath, mount.MountPath)
+				assert.False(t, mount.ReadOnly)
 			}
 		})
 	}

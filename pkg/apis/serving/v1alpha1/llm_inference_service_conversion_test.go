@@ -1358,6 +1358,11 @@ func TestLLMInferenceServiceConversion_PreservesConfidential(t *testing.T) {
 		Confidential: &v1alpha2.ConfidentialSpec{
 			Enabled:    true,
 			ResourceId: ptr.To("kbs:///default/key/model"),
+			TLS: &v1alpha2.ConfidentialTLSSpec{
+				CertResourceId: ptr.To("kbs:///default/cert/tls-crt"),
+				KeyResourceId:  ptr.To("kbs:///default/cert/tls-key"),
+				CAResourceId:   ptr.To("kbs:///default/cert/ca-crt"),
+			},
 		},
 		LoRA: &v1alpha2.LoRASpec{
 			Adapters: []v1alpha2.LLMModelSpec{{

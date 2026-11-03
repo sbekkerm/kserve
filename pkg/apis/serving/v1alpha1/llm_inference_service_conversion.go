@@ -346,6 +346,7 @@ func convertModelSpecToV1Alpha2(src *LLMModelSpec) v1alpha2.LLMModelSpec {
 		dst.Confidential = &v1alpha2.ConfidentialSpec{
 			Enabled:    src.Confidential.Enabled,
 			ResourceId: src.Confidential.ResourceId,
+			TLS:        convertConfidentialTLSToV1Alpha2(src.Confidential.TLS),
 		}
 	}
 
@@ -367,10 +368,33 @@ func convertModelSpecFromV1Alpha2(src *v1alpha2.LLMModelSpec) LLMModelSpec {
 		dst.Confidential = &ConfidentialSpec{
 			Enabled:    src.Confidential.Enabled,
 			ResourceId: src.Confidential.ResourceId,
+			TLS:        convertConfidentialTLSFromV1Alpha2(src.Confidential.TLS),
 		}
 	}
 
 	return dst
+}
+
+func convertConfidentialTLSToV1Alpha2(src *ConfidentialTLSSpec) *v1alpha2.ConfidentialTLSSpec {
+	if src == nil {
+		return nil
+	}
+	return &v1alpha2.ConfidentialTLSSpec{
+		CertResourceId: src.CertResourceId,
+		KeyResourceId:  src.KeyResourceId,
+		CAResourceId:   src.CAResourceId,
+	}
+}
+
+func convertConfidentialTLSFromV1Alpha2(src *v1alpha2.ConfidentialTLSSpec) *ConfidentialTLSSpec {
+	if src == nil {
+		return nil
+	}
+	return &ConfidentialTLSSpec{
+		CertResourceId: src.CertResourceId,
+		KeyResourceId:  src.KeyResourceId,
+		CAResourceId:   src.CAResourceId,
+	}
 }
 
 func convertLoRASpecToV1Alpha2(src *LoRASpec) *v1alpha2.LoRASpec {

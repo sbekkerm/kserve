@@ -92,8 +92,15 @@ func (r *LLMISVCReconciler) reconcileWorkload(ctx context.Context, llmSvc *v1alp
 		}
 	}
 
-	// Set up TLS certificates for secure communication
-	if err := r.reconcileSelfSignedCertsSecret(ctx, llmSvc, config.SchedulerConfig); err != nil {
+	// Set up TLS certificates for secure communication. Confidential TLS material
+	// is fetched inside the TEE, so skip (and delete) the cluster Secret that
+	// would otherwise store tls.key in etcd.
+	if confidentialTLSEnabled(llmSvc) {
+		if err := r.deleteSelfSignedCertsSecret(ctx, llmSvc); err != nil {
+			llmSvc.MarkMainWorkloadNotReady("ReconcileCertsError", err.Error())
+			return fmt.Errorf("failed to delete self-signed certificates secret: %w", err)
+		}
+	} else if err := r.reconcileSelfSignedCertsSecret(ctx, llmSvc, config.SchedulerConfig); err != nil {
 		llmSvc.MarkMainWorkloadNotReady("ReconcileCertsError", err.Error())
 		return fmt.Errorf("failed to reconcile self-signed certificates secret: %w", err)
 	}
@@ -164,7 +171,7 @@ func (r *LLMISVCReconciler) reconcileWorkload(ctx context.Context, llmSvc *v1alp
 
 func (r *LLMISVCReconciler) reconcileWorkloadService(ctx context.Context, llmSvc *v1alpha2.LLMInferenceService, config *Config) error {
 	workloadServiceProtocol := "http"
-	if config != nil && config.EnableTLS {
+	if (config != nil && config.EnableTLS) || confidentialTLSEnabled(llmSvc) {
 		workloadServiceProtocol = "https"
 	}
 	expected := &corev1.Service{

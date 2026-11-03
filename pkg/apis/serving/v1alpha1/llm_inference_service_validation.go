@@ -460,12 +460,34 @@ func (l *LLMInferenceServiceValidator) validateConfidential(llmSvc *LLMInference
 		return nil, nil
 	}
 
-	return kservevalidation.ValidateConfidentialSpec(
+	warnings, allErrs := kservevalidation.ValidateConfidentialSpec(
 		confidential.Enabled,
 		confidential.ResourceId,
+		confidentialTLSForValidation(confidential.TLS),
 		llmSvc.Spec.Model.URI.String(),
 		field.NewPath("spec", "model"),
 	)
+
+	hasScheduler := llmSvc.Spec.Router != nil && llmSvc.Spec.Router.Scheduler != nil
+	hasRoute := llmSvc.Spec.Router != nil && llmSvc.Spec.Router.Route != nil
+	allErrs = append(allErrs, kservevalidation.ValidateConfidentialTLSRouter(
+		confidential.TLS != nil,
+		hasScheduler,
+		hasRoute,
+	)...)
+
+	return warnings, allErrs
+}
+
+func confidentialTLSForValidation(tls *ConfidentialTLSSpec) *kservevalidation.ConfidentialTLS {
+	if tls == nil {
+		return nil
+	}
+	return &kservevalidation.ConfidentialTLS{
+		CertResourceId: tls.CertResourceId,
+		KeyResourceId:  tls.KeyResourceId,
+		CAResourceId:   tls.CAResourceId,
+	}
 }
 
 func (l *LLMInferenceServiceValidator) validateLoRAAdapters(llmSvc *LLMInferenceService) field.ErrorList {

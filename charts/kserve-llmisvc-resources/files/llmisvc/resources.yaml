@@ -1600,6 +1600,7 @@ rules:
   - gatewayclasses
   - gateways
   - httproutes
+  - tlsroutes
   verbs:
   - create
   - delete

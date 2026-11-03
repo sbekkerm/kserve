@@ -928,10 +928,11 @@ func validateConfidential(isvc *InferenceService) (admission.Warnings, error) {
 		return warnings, errors.New("confidential model serving requires storageUri to be set")
 	}
 
-	// Delegate OCI warning and resourceId validation to the shared helper
+	// Delegate OCI warning, resourceId, and tls validation to the shared helper
 	w, errs := validation.ValidateConfidentialSpec(
 		confidential.Enabled,
 		confidential.ResourceId,
+		confidentialTLSForValidation(confidential.TLS),
 		*storageUri,
 		field.NewPath("spec", "predictor"),
 	)
@@ -941,6 +942,17 @@ func validateConfidential(isvc *InferenceService) (admission.Warnings, error) {
 	}
 
 	return warnings, nil
+}
+
+func confidentialTLSForValidation(tls *ConfidentialTLSSpec) *validation.ConfidentialTLS {
+	if tls == nil {
+		return nil
+	}
+	return &validation.ConfidentialTLS{
+		CertResourceId: tls.CertResourceId,
+		KeyResourceId:  tls.KeyResourceId,
+		CAResourceId:   tls.CAResourceId,
+	}
 }
 
 // GetConfidentialSpecFromPredictor extracts the ConfidentialSpec from any predictor implementation
